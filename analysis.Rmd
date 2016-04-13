@@ -1,0 +1,57 @@
+---
+title: 'Reproducible Research: Course Project 2'
+author: "Martijn van Gorp"
+date: "13 April 2016"
+output: html_document
+---
+***
+## Basic Analysis on the Impact of Severe Weather Events
+
+#### Synopsis
+
+#### Data processing
+
+##### Download file
+```{r}
+dataurl = 'https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2'
+datafile = 'stormdata.csv.bz2'
+if(!file.exists(datafile)) { download.file(dataurl,datafile) }
+```
+
+##### Read the data
+```{r cache=TRUE}
+data = read.csv(datafile, header = TRUE, sep=",")
+head(data)
+```
+
+```{r}
+# Load dplyr (and suppress messages)
+suppressMessages(library(dplyr))
+
+# Select only relevant columns
+subdata = data %>% select(EVTYPE, FATALITIES, INJURIES, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP)
+
+# Show first few rows, for your information
+head(subdata)
+
+# Group by event
+subdata_by_event = subdata %>% group_by(EVTYPE)
+
+# Show first few rows
+head(subdata_by_event)
+```
+
+
+#### Results
+*Across the United States, which types of events are most harmful with respect to population health?*
+```{r}
+health = subdata_by_event %>% summarise(SUM_INJ = sum(as.numeric(INJURIES)))
+print(health)
+```
+
+*Across the United States, which types of events have the greatest economic consequences?*    
+
+
+
+
+

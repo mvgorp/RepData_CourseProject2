@@ -1,0 +1,7 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+stormdata.csv
+stormdata.csv.bz2
+analysis_cache
