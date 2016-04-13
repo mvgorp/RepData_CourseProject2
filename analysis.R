@@ -19,7 +19,7 @@ subdata = data %>% select(EVTYPE, FATALITIES, INJURIES, PROPDMG, PROPDMGEXP, CRO
 # Group by event
 subdata_by_event = subdata %>% group_by(EVTYPE)
 
-#
+###
 health = subdata_by_event %>% 
     summarise_each(funs(sum), FATALITIES, INJURIES) %>% 
     mutate(TOTAL = (FATALITIES + INJURIES)) %>%
@@ -30,11 +30,37 @@ health = subdata_by_event %>%
 health$EVTYPE <- factor(health$EVTYPE, levels = health$EVTYPE[order(health$TOTAL)])
 
 g = ggplot(data = health, aes(x=EVTYPE)) + xlab("Weather Event") +
-        geom_bar(stat="identity", aes(y=INJURIES, fill="Injuries")) +
-        geom_bar(stat="identity", aes(y=FATALITIES, fill = "Fatalities")) +
-        scale_fill_discrete(name="Type") + ylab("Number of Fatalities and Injuries") +
-        coord_flip() +
-        ggtitle("Top 10 Weather Events with the most Fatalities and Injuries")
+    geom_bar(stat="identity", aes(y=INJURIES, fill="Injuries")) +
+    geom_bar(stat="identity", aes(y=FATALITIES, fill = "Fatalities")) +
+    scale_fill_discrete(name="Type") + ylab("Number of Fatalities and Injuries") +
+    coord_flip() +
+    ggtitle("Top 10 Weather Events with the most Fatalities and Injuries")
+
+#print(g)
+
+
+###
+
+econom = subdata_by_event %>% 
+    summarise_each(funs(sum), PROPDMG, CROPDMG) %>% 
+    mutate(TOTAL = (PROPDMG + CROPDMG)) %>%
+    arrange(desc(TOTAL)) %>%
+    top_n(10)
+
+library(reshape2)
+
+#
+econom$EVTYPE <- factor(econom$EVTYPE, levels = econom$EVTYPE[order(econom$TOTAL)])
+
+#g = ggplot(data = econom, aes(x=EVTYPE)) + xlab("Weather Event") +
+#    geom_bar(stat="identity", aes(y=PROPDMG, fill="Property Damage")) +
+#    geom_bar(stat="identity", aes(y=CROPDMG, fill = "Crop Damage")) +
+#    scale_fill_discrete(name="Type") + ylab("Damage in Dollars") +
+#    coord_flip() +
+#    ggtitle("Top 10 Weather Events with the most damage")
+
+econom_long = melt(econom)
+g = ggplot(econom_long, aes(x = EVTYPE, y = value, fill = variable)) + geom_bar(stat='identity')
 
 print(g)
 
