@@ -1,7 +1,6 @@
 # Load dplyr (and suppress messages)
 library(dplyr)
 library(ggplot2)
-library(tidyr)
 
 #
 dataurl = 'https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2'

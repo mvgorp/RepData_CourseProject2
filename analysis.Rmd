@@ -15,43 +15,99 @@ output: html_document
 ```{r}
 dataurl = 'https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2'
 datafile = 'stormdata.csv.bz2'
+
+# Check if already present
 if(!file.exists(datafile)) { download.file(dataurl,datafile) }
 ```
 
 ##### Read the data
+The function read.csv can read bz2 files, so no need to unzip
 ```{r cache=TRUE}
 data = read.csv(datafile, header = TRUE, sep=",")
+
+# Show first few rows to get an idea of the raw dataset
 head(data)
 ```
 
+##### Load libraries
+We use the following libraries for this analysis:
 ```{r}
-# Load dplyr (and suppress messages)
 suppressMessages(library(dplyr))
-
-# Select only relevant columns
-subdata = data %>% select(EVTYPE, FATALITIES, INJURIES, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP)
-
-# Show first few rows, for your information
-head(subdata)
-
-# Group by event
-subdata_by_event = subdata %>% group_by(EVTYPE)
-
-# Show first few rows
-head(subdata_by_event)
+suppressMessages(library(reshape2))
+suppressMessages(library(ggplot2))
 ```
-
 
 #### Results
-*Across the United States, which types of events are most harmful with respect to population health?*
+Both research questions are related to the statistics per weather event, 
+so we can group the data by weather event type. The event type can be found in de columns EVTYPE.
 ```{r}
-health = subdata_by_event %>% summarise(SUM_INJ = sum(as.numeric(INJURIES)))
-print(health)
+# Group by event
+subdata_by_event = data %>% group_by(EVTYPE)
 ```
 
-*Across the United States, which types of events have the greatest economic consequences?*    
+We are now prepared to answer the two research questions.
 
+#####Question 1. Across the United States, which types of events are most harmful with respect to population health?
+First we have to ask ourselves how we can measure population health. 
+If we look at the data set, there are two columns that give the fatalities and injuries for each measured weather event.
+So if both of these have a high number, we can say that an event has a harmfull effect on population health.
+To give an answer to which events are most harmful, we work with a Top 10.
 
+With the code below, we to calculate the SUM of the columns FATALITIES and INJURIES. 
+Next to this we calculate the total of both of these so we can sort the result by this total to get a Top 10.
+```{r}
+health = subdata_by_event %>% 
+    summarise_each(funs(sum), FATALITIES, INJURIES) %>% 
+    mutate(TOTAL = (FATALITIES + INJURIES)) %>%
+    arrange(desc(TOTAL)) %>%
+    top_n(10)
 
+# Show data
+health
+```
 
+```{r fig.width=10, fig.height=4}
+# Sort data by TOTAL (needed for graph)
+health$EVTYPE <- factor(health$EVTYPE, levels = health$EVTYPE[order(health$TOTAL)])
 
+# Make wide tabel into long (remove TOTAL column)
+health_long = melt(select(health,-TOTAL), id = c("EVTYPE"))
+
+# Barplot
+ggplot(health_long, aes(x = EVTYPE, y = value, fill = variable)) + 
+        geom_bar(stat='identity') + 
+        xlab('Weather Event') + 
+        ylab('Number of faculties and injuries') +
+        ggtitle('Top 10 Weather Events most harmful to population health') +
+        scale_fill_discrete(name = 'Type') +
+        coord_flip()
+```
+
+#####Question 2. Across the United States, which types of events have the greatest economic consequences?
+```{r}
+econom = subdata_by_event %>% 
+    summarise_each(funs(sum), PROPDMG, CROPDMG) %>% 
+    mutate(TOTAL = (PROPDMG + CROPDMG)) %>%
+    arrange(desc(TOTAL)) %>%
+    top_n(10)
+
+# Show data
+econom
+```
+
+```{r fig.width=10, fig.height=4}
+# Sort data by TOTAL (needed for graph)
+econom$EVTYPE <- factor(econom$EVTYPE, levels = econom$EVTYPE[order(econom$TOTAL)])
+
+# Make wide tabel into long (remove TOTAL column)
+econom_long = melt(select(econom,-TOTAL), id = c("EVTYPE"))
+
+# Barplot
+ggplot(econom_long, aes(x = EVTYPE, y = value, fill = variable)) + 
+        geom_bar(stat='identity') + 
+        xlab('Weather Event') + 
+        ylab('Damage in Dollars') +
+        ggtitle('Top 10 Weather Events with greatest economic consequences') +
+        scale_fill_discrete(name = 'Type') +
+        coord_flip()
+```
